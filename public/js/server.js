@@ -139,5 +139,21 @@ app.patch('/api/agendamentos/:id', (req, res) => {
     salvarDB(db);
     res.json(enriquecer(db, ag));
 });
+
+// ---- Horários de atendimento do barbeiro ----
+app.get('/api/horarios/:barbeiroId', (req, res) =>
+  res.json(lerDB().horarios[req.params.barbeiroId] || { dias: [], slots: [] }));
+
+app.put('/api/horarios/:barbeiroId', (req, res) => {
+  const { dias, slots } = req.body;
+  if (!Array.isArray(dias) || !Array.isArray(slots))
+    return res.status(400).json({ erro: 'Dados inválidos.' });
+  const db = lerDB();
+  db.horarios[req.params.barbeiroId] = { dias, slots };
+  salvarDB(db);
+  res.json(db.horarios[req.params.barbeiroId]);
+});
+
+
 const PORT = 3000;
 app.listen(PORT, () => console.log(`BarberTime rodando em http://localhost:${PORT}`));
