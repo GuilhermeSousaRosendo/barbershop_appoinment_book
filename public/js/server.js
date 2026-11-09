@@ -1,0 +1,143 @@
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+
+const app = express();
+const DB_FILE = path.join(__dirname, 'db.json');
+
+// ---- "Banco de dados" em JSON ----
+const lerDB = () => JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+const salvarDB = db => fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+const proximoId = lista => Math.max(0, ...lista.map(i => i.id)) + 1;
+const semSenha = ({ senha, ...u }) => u;
+
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ---- Cadastro ----
+app.post('/api/cadastro', (req, res) => {
+    const { nome, email, senha, tipo } = req.body;
+    if (!nome || !email || !senha || !['cliente', 'barbeiro'].includes(tipo))
+        return res.status(400).json({ erro: 'Preencha todos os campos.' });
+
+    const db = lerDB();
+    const emailNorm = email.trim().toLowerCase();
+    if (db.usuarios.some(u => u.email === emailNorm))
+        return res.status(409).json({ erro: 'E-mail já cadastrado.' });
+
+    const user = { id: proximoId(db.usuarios), nome: nome.trim(), email: emailNorm, senha, tipo };
+    db.usuarios.push(user);
+
+    // barbeiro novo já nasce com um horário padrão
+    if (tipo === 'barbeiro') {
+        db.horarios[user.id] = {
+            dias: [1, 2, 3, 4, 5, 6],
+            slots: ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00']
+        };
+    }
+    salvarDB(db);
+    res.status(201).json(semSenha(user));
+});
+
+// ---- Login ----
+app.post('/api/login', (req, res) => {
+    const { email, senha } = req.body;
+    const user = lerDB().usuarios.find(u => u.email === (email || '').trim().toLowerCase() && u.senha === senha);
+    if (!user) return res.status(401).json({ erro: 'E-mail ou senha inválidos.' });
+    res.json(semSenha(user));
+});
+
+// ---- Listas ----
+app.get('/api/barbeiros', (req, res) =>
+    res.json(lerDB().usuarios.filter(u => u.tipo === 'barbeiro').map(semSenha)));
+
+app.get('/api/servicos', (req, res) => res.json(lerDB().servicos));
+
+// ---- Monta os horários de um barbeiro em um dia ----
+function montarSlots(db, barbeiroId, data) {
+    const h = db.horarios[barbeiroId];
+    if (!h) return [];
+    const diaSemana = new Date(data + 'T12:00:00').getDay();
+    if (!h.dias.includes(diaSemana)) return [];
+
+    const agora = new Date();
+    const hojeStr = agora.toLocaleDateString('sv-SE');      // YYYY-MM-DD
+    const horaAgora = agora.toTimeString().slice(0, 5);     // HH:MM
+
+    return [...h.slots].sort().map(hora => {
+        const ag = db.agendamentos.find(a =>
+            a.barbeiroId === barbeiroId && a.data === data && a.hora === hora && a.status !== 'cancelado');
+        const passou = data < hojeStr || (data === hojeStr && hora <= horaAgora);
+        return { hora, livre: !ag && !passou, agendamento: ag || null };
+    });
+}
+
+const enriquecer = (db, a) => ({
+    ...a,
+    clienteNome: db.usuarios.find(u => u.id === a.clienteId)?.nome,
+    barbeiroNome: db.usuarios.find(u => u.id === a.barbeiroId)?.nome,
+    servico: db.servicos.find(s => s.id === a.servicoId)?.nome,
+    preco: db.servicos.find(s => s.id === a.servicoId)?.preco
+});
+
+// ---- Disponibilidade (cliente vê só livre/ocupado) ----
+app.get('/api/disponibilidade', (req, res) => {
+    const { barbeiroId, data } = req.query;
+    if (!barbeiroId || !data) return res.status(400).json({ erro: 'Informe barbeiro e data.' });
+    const slots = montarSlots(lerDB(), Number(barbeiroId), data);
+    res.json(slots.map(({ hora, livre }) => ({ hora, livre })));
+});
+
+// ---- Agenda do dia (barbeiro vê quem marcou) ----
+app.get('/api/agenda', (req, res) => {
+    const { barbeiroId, data } = req.query;
+    const db = lerDB();
+    const slots = montarSlots(db, Number(barbeiroId), data);
+    res.json(slots.map(s => ({ ...s, agendamento: s.agendamento ? enriquecer(db, s.agendamento) : null })));
+});
+
+// ---- Criar agendamento ----
+app.post('/api/agendamentos', (req, res) => {
+    const { clienteId, barbeiroId, servicoId, data, hora } = req.body;
+    if (!clienteId || !barbeiroId || !servicoId || !data || !hora)
+        return res.status(400).json({ erro: 'Dados incompletos.' });
+
+    const db = lerDB();
+    const slot = montarSlots(db, Number(barbeiroId), data).find(s => s.hora === hora);
+    if (!slot || !slot.livre) return res.status(409).json({ erro: 'Horário indisponível.' });
+
+    const novo = {
+        id: proximoId(db.agendamentos),
+        clienteId: Number(clienteId), barbeiroId: Number(barbeiroId), servicoId: Number(servicoId),
+        data, hora, status: 'pendente'
+    };
+    db.agendamentos.push(novo);
+    salvarDB(db);
+    res.status(201).json(enriquecer(db, novo));
+});
+
+// ---- Listar agendamentos (por cliente ou por barbeiro) ----
+app.get('/api/agendamentos', (req, res) => {
+    const { clienteId, barbeiroId } = req.query;
+    const db = lerDB();
+    let lista = db.agendamentos;
+    if (clienteId) lista = lista.filter(a => a.clienteId === Number(clienteId));
+    if (barbeiroId) lista = lista.filter(a => a.barbeiroId === Number(barbeiroId));
+    lista.sort((a, b) => (a.data + a.hora).localeCompare(b.data + b.hora));
+    res.json(lista.map(a => enriquecer(db, a)));
+});
+
+// ---- Confirmar / cancelar ----
+app.patch('/api/agendamentos/:id', (req, res) => {
+    const { status } = req.body;
+    if (!['confirmado', 'cancelado'].includes(status))
+        return res.status(400).json({ erro: 'Status inválido.' });
+    const db = lerDB();
+    const ag = db.agendamentos.find(a => a.id === Number(req.params.id));
+    if (!ag) return res.status(404).json({ erro: 'Agendamento não encontrado.' });
+    ag.status = status;
+    salvarDB(db);
+    res.json(enriquecer(db, ag));
+});
+const PORT = 3000;
+app.listen(PORT, () => console.log(`BarberTime rodando em http://localhost:${PORT}`));
