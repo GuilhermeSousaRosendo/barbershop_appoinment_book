@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BarberTime</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="nav" id="nav"></header>
+  <main>
+    <section class="hero">
+      <h1>Seu horário na barbearia, sem fila.</h1>
+      <p class="sub">Escolha o barbeiro, o dia e o horário livre em poucos cliques.</p>
+      <a class="btn" href="agendar.html" id="btnAgendar">Agendar agora</a>
+    </section>
+
+    <div class="card">
+      <h2>Nossos barbeiros</h2>
+      <div class="grid" id="barbeiros"></div>
+    </div>
+    <div class="card">
+      <h2>Serviços</h2>
+      <div class="grid" id="servicos"></div>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    navbar();
+    const s = sessao();
+    if (s && s.tipo === 'barbeiro') { $('#btnAgendar').textContent = 'Ver minha agenda'; $('#btnAgendar').href = 'barbeiro.html'; }
+    else if (!s) $('#btnAgendar').href = 'login.html';
+
+    api('/barbeiros').then(l => $('#barbeiros').innerHTML =
+      l.map(b => `<div class="item">✂️<br><b>${b.nome}</b></div>`).join(''));
+    api('/servicos').then(l => $('#servicos').innerHTML =
+      l.map(x => `<div class="item"><b>${x.nome}</b><br>R$ ${x.preco}</div>`).join(''));
+  </script>
+</body>
+</html>
