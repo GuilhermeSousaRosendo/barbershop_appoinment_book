@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agendar | BarberTime</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="nav" id="nav"></header>
+  <main>
+    <div class="card">
+      <h2>Agendar horário</h2>
+      <div class="col">
+        <label>Barbeiro</label>
+        <select id="barbeiro"></select>
+        <label>Serviço</label>
+        <select id="servico"></select>
+        <label>Dia</label>
+        <input type="date" id="data">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Horários disponíveis</h2>
+      <div class="slots" id="slots"></div>
+      <br>
+      <button class="btn" id="btnConfirmar" disabled>Confirmar agendamento</button>
+      <p class="msg" id="msg"></p>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    const user = proteger('cliente');
+    navbar();
+    let horaEscolhida = null;
+
+    async function iniciar() {
+      const [barbeiros, servicos] = await Promise.all([api('/barbeiros'), api('/servicos')]);
+      $('#barbeiro').innerHTML = barbeiros.map(b => `<option value="${b.id}">${b.nome}</option>`).join('');
+      $('#servico').innerHTML = servicos.map(s => `<option value="${s.id}">${s.nome} - R$ ${s.preco}</option>`).join('');
+      $('#data').min = $('#data').value = hoje();
+      carregarSlots();
+    }
+
+    async function carregarSlots() {
+      horaEscolhida = null;
+      $('#btnConfirmar').disabled = true;
+      $('#msg').textContent = '';
+      if (!$('#data').value) return;
+      const slots = await api(`/disponibilidade?barbeiroId=${$('#barbeiro').value}&data=${$('#data').value}`);
+      $('#slots').innerHTML = slots.length
+        ? slots.map(s => `<button class="slot" data-hora="${s.hora}" ${s.livre ? '' : 'disabled'}>${s.hora}</button>`).join('')
+        : '<p class="hint">O barbeiro não atende neste dia.</p>';
+    }
+
+    $('#slots').onclick = e => {
+      const b = e.target.closest('.slot');
+      if (!b || b.disabled) return;
+      document.querySelectorAll('.slot').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+      horaEscolhida = b.dataset.hora;
+      $('#btnConfirmar').disabled = false;
+    };
+
+    $('#barbeiro').onchange = $('#data').onchange = carregarSlots;
+
+    $('#btnConfirmar').onclick = async () => {
+      try {
+        await api('/agendamentos', { method: 'POST', body: {
+          clienteId: user.id, barbeiroId: $('#barbeiro').value,
+          servicoId: $('#servico').value, data: $('#data').value, hora: horaEscolhida
+        }});
+        location.href = 'meus-agendamentos.html';
+      } catch (err) { $('#msg').textContent = err.message; carregarSlots(); }
+    };
+
+    iniciar();
+  </script>
+</body>
+</html>
