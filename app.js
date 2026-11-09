@@ -63,7 +63,46 @@ $('#formLogin').onsubmit = e => {
 $('#btnLogout').onclick = () => { sessao = null; localStorage.removeItem('sessao'); mostrarTela(); };
 
 // Stubs (implementados nos próximos passos)
-function iniciarCliente() { }
-function renderBarbeiro() { }
+const HORARIOS = ['09:00','10:00','11:00','13:00','14:00','15:00','16:00','17:00'];
+
+function iniciarCliente() {
+  const barbeiros = load('users', []).filter(u => u.tipo === 'barbeiro');
+  $('#agBarbeiro').innerHTML = barbeiros.map(b => `<option value="${b.email}">${b.nome}</option>`).join('');
+  $('#agHora').innerHTML = HORARIOS.map(h => `<option>${h}</option>`).join('');
+  $('#agData').min = new Date().toISOString().split('T')[0];
+  renderCliente();
+}
+
+$('#formAgendar').onsubmit = e => {
+  e.preventDefault();
+  const ags = load('agendamentos', []);
+  const novo = {
+    id: Date.now(),
+    clienteEmail: sessao.email, clienteNome: sessao.nome,
+    barbeiroEmail: $('#agBarbeiro').value,
+    barbeiroNome: $('#agBarbeiro').selectedOptions[0].text,
+    servico: $('#agServico').value,
+    data: $('#agData').value, hora: $('#agHora').value,
+    status: 'pendente'
+  };
+  const ocupado = ags.some(a => a.barbeiroEmail === novo.barbeiroEmail &&
+    a.data === novo.data && a.hora === novo.hora && a.status !== 'cancelado');
+  if (ocupado) return $('#msgAg').textContent = 'Horário indisponível para este barbeiro.';
+  ags.push(novo); save('agendamentos', ags);
+  $('#msgAg').textContent = 'Agendamento solicitado! ✅';
+  renderCliente();
+};
+
+function fmtData(d) { return d.split('-').reverse().join('/'); }
+
+function renderCliente() {
+  const meus = load('agendamentos', []).filter(a => a.clienteEmail === sessao.email);
+  $('#listaCliente').innerHTML = meus.length ? meus.map(a => `
+    <li>
+      <div><b>${a.servico}</b><br>${a.barbeiroNome} · ${fmtData(a.data)} às ${a.hora}<br>
+        <span class="badge ${a.status}">${a.status}</span></div>
+      ${a.status !== 'cancelado' ? `<button class="btn small danger" onclick="mudarStatus(${a.id},'cancelado')">Cancelar</button>` : ''}
+    </li>`).join('') : '<li>Nenhum agendamento ainda.</li>';
+}function renderBarbeiro() { }
 
 mostrarTela();
