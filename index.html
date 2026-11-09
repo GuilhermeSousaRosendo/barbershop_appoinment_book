@@ -1,11 +1,81 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BarberTime</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    
+  <header class="topbar">
+    <h1>💈 BarberTime</h1>
+    <div id="userbox" hidden>
+      <span id="username"></span>
+      <button id="btnLogout" class="btn small">Sair</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- LOGIN / CADASTRO -->
+    <section id="auth" class="card">
+      <div class="tabs">
+        <button id="tabLogin" class="active">Entrar</button>
+        <button id="tabCadastro">Cadastrar</button>
+      </div>
+
+      <form id="formLogin">
+        <input type="email" id="loginEmail" placeholder="E-mail" required>
+        <input type="password" id="loginSenha" placeholder="Senha" required>
+        <button class="btn">Entrar</button>
+      </form>
+
+      <form id="formCadastro" hidden>
+        <input id="cadNome" placeholder="Nome completo" required>
+        <input type="email" id="cadEmail" placeholder="E-mail" required>
+        <input type="password" id="cadSenha" placeholder="Senha" required>
+        <select id="cadTipo">
+          <option value="cliente">Sou cliente</option>
+          <option value="barbeiro">Sou barbeiro</option>
+        </select>
+        <button class="btn">Criar conta</button>
+      </form>
+
+      <p id="msg"></p>
+      <p class="hint">Demo: <b>joao@barber.com</b> / <b>123</b> (barbeiro)</p>
+    </section>
+
+    <!-- ÁREA DO CLIENTE -->
+    <section id="client" hidden>
+      <div class="card">
+        <h2>Agendar horário</h2>
+        <form id="formAgendar">
+          <select id="agBarbeiro" required></select>
+          <select id="agServico" required>
+            <option value="Corte - R$ 40">Corte - R$ 40</option>
+            <option value="Barba - R$ 30">Barba - R$ 30</option>
+            <option value="Corte + Barba - R$ 65">Corte + Barba - R$ 65</option>
+          </select>
+          <input type="date" id="agData" required>
+          <select id="agHora" required></select>
+          <button class="btn">Agendar</button>
+        </form>
+        <p id="msgAg"></p>
+      </div>
+      <div class="card">
+        <h2>Meus agendamentos</h2>
+        <ul id="listaCliente" class="lista"></ul>
+      </div>
+    </section>
+
+    <!-- ÁREA DO BARBEIRO -->
+    <section id="barber" hidden>
+      <div class="card">
+        <h2>Minha agenda</h2>
+        <ul id="listaBarbeiro" class="lista"></ul>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
 </body>
 </html>
