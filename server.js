@@ -32,7 +32,17 @@ app.post('/api/cadastro', (req, res) => {
     if (tipo === 'barbeiro') {
         db.horarios[user.id] = {
             dias: [1, 2, 3, 4, 5, 6],
-            slots: ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00']
+            slots: [
+                '09:00', '09:30',
+                '10:00', '10:30',
+                '11:00', '11:30',
+                '12:00', '12:30',
+                '13:00', '13:30',
+                '14:00', '14:30',
+                '15:00', '15:30',
+                '16:00', '16:30',
+                '17:00', '17:30'
+            ]
         };
     }
     salvarDB(db);
@@ -142,16 +152,16 @@ app.patch('/api/agendamentos/:id', (req, res) => {
 
 // ---- Horários de atendimento do barbeiro ----
 app.get('/api/horarios/:barbeiroId', (req, res) =>
-  res.json(lerDB().horarios[req.params.barbeiroId] || { dias: [], slots: [] }));
+    res.json(lerDB().horarios[req.params.barbeiroId] || { dias: [], slots: [] }));
 
 app.put('/api/horarios/:barbeiroId', (req, res) => {
-  const { dias, slots } = req.body;
-  if (!Array.isArray(dias) || !Array.isArray(slots))
-    return res.status(400).json({ erro: 'Dados inválidos.' });
-  const db = lerDB();
-  db.horarios[req.params.barbeiroId] = { dias, slots };
-  salvarDB(db);
-  res.json(db.horarios[req.params.barbeiroId]);
+    const { dias, slots } = req.body;
+    if (!Array.isArray(dias) || !Array.isArray(slots))
+        return res.status(400).json({ erro: 'Dados inválidos.' });
+    const db = lerDB();
+    db.horarios[req.params.barbeiroId] = { dias, slots };
+    salvarDB(db);
+    res.json(db.horarios[req.params.barbeiroId]);
 });
 
 

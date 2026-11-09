@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -7,40 +8,136 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+
   <header class="nav" id="nav"></header>
-  <main>
-    <div class="card">
-      <h2>Agendar horário</h2>
-      <div class="col">
-        <label>Barbeiro</label>
-        <select id="barbeiro"></select>
-        <label>Serviço</label>
-        <select id="servico"></select>
-        <label>Dia</label>
-        <input type="date" id="data">
+
+  <main class="agendamento-page">
+
+    <!-- CABEÇALHO -->
+    <section class="agendamento-header">
+      <span class="section-tag">BARBERTIME EXPERIENCE</span>
+      <h1>Seu próximo visual começa aqui.</h1>
+      <p>
+        Escolha seu barbeiro, selecione o serviço e encontre
+        o melhor horário para você.
+      </p>
+    </section>
+
+    <!-- ÁREA DE AGENDAMENTO -->
+    <section class="agendamento-layout">
+
+      <!-- DADOS DO AGENDAMENTO -->
+      <div class="card booking-card">
+
+        <div class="card-heading">
+          <div class="step-number">01</div>
+          <div>
+            <h2>Detalhes do agendamento</h2>
+            <p>Personalize sua experiência.</p>
+          </div>
+        </div>
+
+        <div class="col booking-form">
+
+          <div class="field-group">
+            <label for="barbeiro">ESCOLHA SEU BARBEIRO</label>
+            <select id="barbeiro">
+              <option value="">Carregando...</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label for="servico">SERVIÇO DESEJADO</label>
+            <select id="servico">
+              <option value="">Carregando...</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label for="data">DATA DO ATENDIMENTO</label>
+            <input type="date" id="data">
+          </div>
+
+        </div>
+
+        <div class="booking-note">
+          <span class="note-icon">✦</span>
+          <p>
+            Atendimento com hora marcada para oferecer
+            a melhor experiência possível.
+          </p>
+        </div>
+
       </div>
+
+      <!-- HORÁRIOS -->
+      <div class="card schedule-card">
+
+        <div class="card-heading">
+          <div class="step-number">02</div>
+          <div>
+            <h2>Escolha seu horário</h2>
+            <p>Confira os horários disponíveis.</p>
+          </div>
+        </div>
+
+        <div class="availability-label">
+          <span class="availability-dot"></span>
+          Horários disponíveis
+        </div>
+
+        <div class="slots" id="slots">
+          <p class="hint">Carregando horários...</p>
+        </div>
+
+        <div class="schedule-footer">
+          <p class="schedule-hint">
+            Selecione um horário para continuar.
+          </p>
+
+          <button class="btn btn-confirm" id="btnConfirmar" disabled>
+            Confirmar agendamento
+            <span>→</span>
+          </button>
+
+          <p class="msg" id="msg"></p>
+        </div>
+
+      </div>
+
+    </section>
+
+    <div class="agendamento-footer">
+      <span>BARBERTIME</span>
+      <p>Seu estilo merece esse cuidado.</p>
     </div>
 
-    <div class="card">
-      <h2>Horários disponíveis</h2>
-      <div class="slots" id="slots"></div>
-      <br>
-      <button class="btn" id="btnConfirmar" disabled>Confirmar agendamento</button>
-      <p class="msg" id="msg"></p>
-    </div>
   </main>
 
   <script src="js/app.js"></script>
+
   <script>
     const user = proteger('cliente');
     navbar();
+
     let horaEscolhida = null;
 
     async function iniciar() {
-      const [barbeiros, servicos] = await Promise.all([api('/barbeiros'), api('/servicos')]);
-      $('#barbeiro').innerHTML = barbeiros.map(b => `<option value="${b.id}">${b.nome}</option>`).join('');
-      $('#servico').innerHTML = servicos.map(s => `<option value="${s.id}">${s.nome} - R$ ${s.preco}</option>`).join('');
+      const [barbeiros, servicos] = await Promise.all([
+        api('/barbeiros'),
+        api('/servicos')
+      ]);
+
+      $('#barbeiro').innerHTML = barbeiros
+        .map(b => `<option value="${b.id}">${b.nome}</option>`)
+        .join('');
+
+      $('#servico').innerHTML = servicos
+        .map(s => `<option value="${s.id}">${s.nome} - R$ ${s.preco}</option>`)
+        .join('');
+
       $('#data').min = $('#data').value = hoje();
+
       carregarSlots();
     }
 
@@ -48,18 +145,38 @@
       horaEscolhida = null;
       $('#btnConfirmar').disabled = true;
       $('#msg').textContent = '';
-      if (!$('#data').value) return;
-      const slots = await api(`/disponibilidade?barbeiroId=${$('#barbeiro').value}&data=${$('#data').value}`);
+
+      if (!$('#data').value || !$('#barbeiro').value) {
+        $('#slots').innerHTML =
+          '<p class="hint">Selecione um barbeiro e uma data.</p>';
+        return;
+      }
+
+      const slots = await api(
+        `/disponibilidade?barbeiroId=${$('#barbeiro').value}&data=${$('#data').value}`
+      );
+
       $('#slots').innerHTML = slots.length
-        ? slots.map(s => `<button class="slot" data-hora="${s.hora}" ${s.livre ? '' : 'disabled'}>${s.hora}</button>`).join('')
+        ? slots.map(s => `
+            <button class="slot"
+              data-hora="${s.hora}"
+              ${s.livre ? '' : 'disabled'}>
+              ${s.hora}
+            </button>
+          `).join('')
         : '<p class="hint">O barbeiro não atende neste dia.</p>';
     }
 
     $('#slots').onclick = e => {
       const b = e.target.closest('.slot');
+
       if (!b || b.disabled) return;
-      document.querySelectorAll('.slot').forEach(x => x.classList.remove('sel'));
+
+      document.querySelectorAll('.slot')
+        .forEach(x => x.classList.remove('sel'));
+
       b.classList.add('sel');
+
       horaEscolhida = b.dataset.hora;
       $('#btnConfirmar').disabled = false;
     };
@@ -68,15 +185,27 @@
 
     $('#btnConfirmar').onclick = async () => {
       try {
-        await api('/agendamentos', { method: 'POST', body: {
-          clienteId: user.id, barbeiroId: $('#barbeiro').value,
-          servicoId: $('#servico').value, data: $('#data').value, hora: horaEscolhida
-        }});
+        await api('/agendamentos', {
+          method: 'POST',
+          body: {
+            clienteId: user.id,
+            barbeiroId: $('#barbeiro').value,
+            servicoId: $('#servico').value,
+            data: $('#data').value,
+            hora: horaEscolhida
+          }
+        });
+
         location.href = 'meus-agendamentos.html';
-      } catch (err) { $('#msg').textContent = err.message; carregarSlots(); }
+
+      } catch (err) {
+        $('#msg').textContent = err.message;
+        carregarSlots();
+      }
     };
 
     iniciar();
   </script>
+
 </body>
 </html>

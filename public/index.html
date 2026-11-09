@@ -1,41 +1,232 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BarberTime</title>
+  <title>BarberTime | Barbearia</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+
   <header class="nav" id="nav"></header>
-  <main>
-    <section class="hero">
-      <h1>Seu horário na barbearia, sem fila.</h1>
-      <p class="sub">Escolha o barbeiro, o dia e o horário livre em poucos cliques.</p>
-      <a class="btn" href="agendar.html" id="btnAgendar">Agendar agora</a>
+
+  <main class="home-page">
+
+    <!-- HERO -->
+    <section class="home-hero">
+
+      <div class="hero-content">
+
+        <span class="section-tag">
+          BARBERTIME EXPERIENCE
+        </span>
+
+        <h1>
+          Mais que um corte.<br>
+          <span>Uma experiência.</span>
+        </h1>
+
+        <p>
+          Seu estilo merece atenção aos detalhes.
+          Agende seu horário e descubra uma nova
+          experiência em barbearia.
+        </p>
+
+        <div class="hero-actions">
+          <a class="btn hero-btn" href="agendar.html" id="btnAgendar">
+            Agendar horário
+            <span>→</span>
+          </a>
+
+          <span class="hero-caption">
+            Atendimento com hora marcada
+          </span>
+        </div>
+
+      </div>
+
+      <div class="hero-decoration">
+        <div class="hero-circle">
+          <span>BT</span>
+          <div class="circle-line"></div>
+          <small>BARBER<br>TIME</small>
+        </div>
+      </div>
+
+      <div class="hero-bottom">
+        <span>ESTILO · PRECISÃO · PERSONALIDADE</span>
+        <span>01 — 03</span>
+      </div>
+
     </section>
 
-    <div class="card">
-      <h2>Nossos barbeiros</h2>
-      <div class="grid" id="barbeiros"></div>
-    </div>
-    <div class="card">
-      <h2>Serviços</h2>
-      <div class="grid" id="servicos"></div>
-    </div>
+    <!-- DIFERENCIAIS -->
+    <section class="home-features">
+
+      <div class="feature">
+        <span class="feature-icon">✂</span>
+        <div>
+          <h3>Profissionais</h3>
+          <p>Barbeiros qualificados</p>
+        </div>
+      </div>
+
+      <div class="feature">
+        <span class="feature-icon">◷</span>
+        <div>
+          <h3>Sem filas</h3>
+          <p>Horário reservado para você</p>
+        </div>
+      </div>
+
+      <div class="feature">
+        <span class="feature-icon">✦</span>
+        <div>
+          <h3>Qualidade</h3>
+          <p>Cuidado em cada detalhe</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- BARBEIROS -->
+    <section class="home-section">
+
+      <div class="section-heading">
+        <div>
+          <span class="section-tag">NOSSA EQUIPE</span>
+          <h2>Quem cuida do seu estilo.</h2>
+          <p>Conheça os profissionais que fazem a diferença.</p>
+        </div>
+      </div>
+
+      <div class="grid home-grid" id="barbeiros">
+        <p class="hint">Carregando profissionais...</p>
+      </div>
+
+    </section>
+
+    <!-- SERVIÇOS -->
+    <section class="home-section services-section">
+
+      <div class="section-heading">
+        <div>
+          <span class="section-tag">NOSSO MENU</span>
+          <h2>Serviços exclusivos.</h2>
+          <p>Escolha o cuidado ideal para você.</p>
+        </div>
+      </div>
+
+      <div class="grid home-grid services-grid" id="servicos">
+        <p class="hint">Carregando serviços...</p>
+      </div>
+
+      <div class="services-action">
+        <a href="agendar.html" class="btn hero-btn" id="btnServicos">
+          Escolher meu serviço
+          <span>→</span>
+        </a>
+      </div>
+
+    </section>
+
+    <!-- CHAMADA FINAL -->
+    <section class="home-cta">
+
+      <span class="section-tag">SEU MOMENTO COMEÇA AQUI</span>
+
+      <h2>Seu próximo corte<br>está a um clique.</h2>
+
+      <p>
+        Reserve seu horário e venha viver
+        uma experiência diferente.
+      </p>
+
+      <a href="agendar.html" class="btn hero-btn" id="btnAgendarFinal">
+        Agendar agora
+        <span>→</span>
+      </a>
+
+    </section>
+
+    <!-- RODAPÉ -->
+    <footer class="home-footer">
+      <div class="footer-brand">BARBERTIME</div>
+      <p>Estilo, precisão e personalidade.</p>
+      <span>© 2026 BarberTime. Todos os direitos reservados.</span>
+    </footer>
+
   </main>
 
   <script src="js/app.js"></script>
+
   <script>
     navbar();
-    const s = sessao();
-    if (s && s.tipo === 'barbeiro') { $('#btnAgendar').textContent = 'Ver minha agenda'; $('#btnAgendar').href = 'barbeiro.html'; }
-    else if (!s) $('#btnAgendar').href = 'login.html';
 
-    api('/barbeiros').then(l => $('#barbeiros').innerHTML =
-      l.map(b => `<div class="item">✂️<br><b>${b.nome}</b></div>`).join(''));
-    api('/servicos').then(l => $('#servicos').innerHTML =
-      l.map(x => `<div class="item"><b>${x.nome}</b><br>R$ ${x.preco}</div>`).join(''));
+    const s = sessao();
+
+    const botoesAgendamento = [
+      $('#btnAgendar'),
+      $('#btnServicos'),
+      $('#btnAgendarFinal')
+    ];
+
+    if (s && s.tipo === 'barbeiro') {
+      botoesAgendamento.forEach(btn => {
+        btn.textContent = 'Ver minha agenda →';
+        btn.href = 'barbeiro.html';
+      });
+    } else if (!s) {
+      botoesAgendamento.forEach(btn => {
+        btn.href = 'login.html';
+      });
+    }
+
+    api('/barbeiros').then(l => {
+      $('#barbeiros').innerHTML = l.length
+        ? l.map((b, i) => `
+            <div class="item barber-item">
+              <div class="barber-avatar">
+                <span>✂</span>
+              </div>
+
+              <span class="item-number">
+                PROFISSIONAL 0${i + 1}
+              </span>
+
+              <h3>${b.nome}</h3>
+
+              <span class="barber-description">
+                Especialista em estilo e precisão.
+              </span>
+            </div>
+          `).join('')
+        : '<p class="hint">Nenhum profissional cadastrado.</p>';
+    });
+
+    api('/servicos').then(l => {
+      $('#servicos').innerHTML = l.length
+        ? l.map((x, i) => `
+            <div class="item service-item">
+
+              <div class="service-top">
+                <span class="service-number">0${i + 1}</span>
+                <span class="service-icon">✦</span>
+              </div>
+
+              <h3>${x.nome}</h3>
+
+              <div class="service-bottom">
+                <span>INVESTIMENTO</span>
+                <strong>R$ ${Number(x.preco).toFixed(2).replace('.', ',')}</strong>
+              </div>
+
+            </div>
+          `).join('')
+        : '<p class="hint">Nenhum serviço cadastrado.</p>';
+    });
   </script>
+
 </body>
 </html>

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -7,47 +8,176 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+
   <header class="nav" id="nav"></header>
-  <main>
-    <div class="card">
-      <h2>Dias de atendimento</h2>
-      <div class="checks" id="dias"></div>
-    </div>
-    <div class="card">
-      <h2>Horários de atendimento</h2>
-      <div class="checks" id="slots"></div>
-      <br>
-      <button class="btn" id="btnSalvar">Salvar</button>
-      <p class="msg" id="msg"></p>
-    </div>
+
+  <main class="horarios-page">
+
+    <!-- CABEÇALHO -->
+    <section class="horarios-header">
+      <span class="section-tag">PAINEL DO PROFISSIONAL</span>
+
+      <h1>Organize sua agenda.</h1>
+
+      <p>
+        Configure seus dias e horários de atendimento.
+        Sua disponibilidade ficará visível para os clientes.
+      </p>
+    </section>
+
+    <!-- DIAS DE ATENDIMENTO -->
+    <section class="card horarios-card">
+
+      <div class="card-heading">
+        <div class="step-number">01</div>
+
+        <div>
+          <h2>Dias de atendimento</h2>
+          <p>Selecione os dias em que você trabalha.</p>
+        </div>
+      </div>
+
+      <div class="checks dias-grid" id="dias"></div>
+
+      <div class="horarios-info">
+        <span>✦</span>
+        Você pode selecionar mais de um dia da semana.
+      </div>
+
+    </section>
+
+    <!-- HORÁRIOS -->
+    <section class="card horarios-card">
+
+      <div class="card-heading">
+        <div class="step-number">02</div>
+
+        <div>
+          <h2>Horários disponíveis</h2>
+          <p>Defina os horários em que poderá atender.</p>
+        </div>
+      </div>
+
+      <div class="horarios-legenda">
+        <span>
+          <i class="legenda-ativa"></i>
+          Selecionado
+        </span>
+
+        <span>
+          <i class="legenda-inativa"></i>
+          Não selecionado
+        </span>
+      </div>
+
+      <div class="checks slots-grid" id="slots"></div>
+
+      <div class="horarios-info">
+        <span>◷</span>
+        Os horários selecionados serão disponibilizados para agendamento.
+      </div>
+
+    </section>
+
+    <!-- AÇÕES -->
+    <section class="horarios-actions">
+
+      <div class="horarios-action-text">
+        <strong>Pronto para atualizar sua agenda?</strong>
+        <p>Salve as alterações para atualizar sua disponibilidade.</p>
+      </div>
+
+      <button class="btn horarios-save" id="btnSalvar">
+        Salvar horários
+        <span>→</span>
+      </button>
+
+    </section>
+
+    <p class="msg horarios-message" id="msg"></p>
+
+    <!-- RODAPÉ -->
+    <footer class="horarios-footer">
+      <span>BARBERTIME</span>
+      <p>Organização e profissionalismo em cada atendimento.</p>
+    </footer>
+
   </main>
 
   <script src="js/app.js"></script>
+
   <script>
     const user = proteger('barbeiro');
     navbar();
 
     const NOMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-    const TODOS = Array.from({ length: 12 }, (_, i) => String(i + 8).padStart(2, '0') + ':00'); // 08:00 a 19:00
+
+    const TODOS = Array.from(
+      { length: 12 },
+      (_, i) => String(i + 8).padStart(2, '0') + ':00'
+    );
 
     const check = (grupo, valor, texto, marcado) =>
-      `<label><input type="checkbox" data-grupo="${grupo}" value="${valor}" ${marcado ? 'checked' : ''}> ${texto}</label>`;
+      `<label>
+        <input
+          type="checkbox"
+          data-grupo="${grupo}"
+          value="${valor}"
+          ${marcado ? 'checked' : ''}
+        >
+        <span>${texto}</span>
+      </label>`;
 
     async function carregar() {
-      const h = await api('/horarios/' + user.id);
-      $('#dias').innerHTML = NOMES.map((n, i) => check('dia', i, n, h.dias.includes(i))).join('');
-      $('#slots').innerHTML = TODOS.map(t => check('slot', t, t, h.slots.includes(t))).join('');
+      try {
+        const h = await api('/horarios/' + user.id);
+
+        $('#dias').innerHTML = NOMES
+          .map((n, i) => check('dia', i, n, h.dias.includes(i)))
+          .join('');
+
+        $('#slots').innerHTML = TODOS
+          .map(t => check('slot', t, t, h.slots.includes(t)))
+          .join('');
+
+      } catch (err) {
+        $('#msg').textContent = err.message;
+      }
     }
 
-    const marcados = g => [...document.querySelectorAll(`input[data-grupo="${g}"]:checked`)].map(i => i.value);
+    const marcados = g =>
+      [...document.querySelectorAll(
+        `input[data-grupo="${g}"]:checked`
+      )].map(i => i.value);
 
     $('#btnSalvar').onclick = async () => {
-      await api('/horarios/' + user.id, { method: 'PUT', body: {
-        dias: marcados('dia').map(Number), slots: marcados('slot')
-      }});
-      $('#msg').textContent = 'Horários salvos! ✅';
+      const botao = $('#btnSalvar');
+
+      botao.disabled = true;
+      botao.innerHTML = 'Salvando...';
+
+      try {
+        await api('/horarios/' + user.id, {
+          method: 'PUT',
+          body: {
+            dias: marcados('dia').map(Number),
+            slots: marcados('slot')
+          }
+        });
+
+        $('#msg').textContent = 'Horários salvos com sucesso!';
+
+      } catch (err) {
+        $('#msg').textContent = err.message;
+
+      } finally {
+        botao.disabled = false;
+        botao.innerHTML = 'Salvar horários <span>→</span>';
+      }
     };
+
     carregar();
   </script>
+
 </body>
 </html>

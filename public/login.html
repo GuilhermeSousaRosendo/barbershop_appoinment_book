@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -6,33 +7,157 @@
   <title>Entrar | BarberTime</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body class="login-body">
+
   <header class="nav" id="nav"></header>
-  <main>
-    <div class="card">
-      <h2>Entrar</h2>
-      <form id="form">
-        <input type="email" id="email" placeholder="E-mail" required>
-        <input type="password" id="senha" placeholder="Senha" required>
-        <button class="btn">Entrar</button>
-      </form>
-      <p class="msg" id="msg"></p>
-      <p class="hint">Não tem conta? <a href="cadastro.html"><b>Cadastre-se</b></a></p>
-      <p class="hint">Demo: cliente <b>maria@email.com</b> / barbeiro <b>joao@barber.com</b> (senha <b>123</b>)</p>
-    </div>
+
+  <main class="login-page">
+
+    <section class="login-container">
+
+      <!-- LADO VISUAL -->
+      <div class="login-visual">
+
+        <div class="login-brand">
+          <span class="brand-symbol">BT</span>
+          <span>BARBERTIME</span>
+        </div>
+
+        <div class="login-visual-content">
+          <span class="section-tag">BARBERTIME EXPERIENCE</span>
+
+          <h1>
+            Seu estilo.<br>
+            Seu momento.<br>
+            <span>Sua identidade.</span>
+          </h1>
+
+          <p>
+            Entre na sua conta e tenha acesso
+            a uma experiência exclusiva de
+            agendamento.
+          </p>
+        </div>
+
+        <div class="login-visual-footer">
+          ESTILO · PRECISÃO · PERSONALIDADE
+        </div>
+
+        <div class="login-decoration">BT</div>
+
+      </div>
+
+      <!-- FORMULÁRIO -->
+      <div class="login-form-area">
+
+        <div class="login-form-content">
+
+          <div class="login-mobile-brand">
+            <span>BT</span>
+            BARBERTIME
+          </div>
+
+          <span class="section-tag">BEM-VINDO DE VOLTA</span>
+
+          <h2>Acesse sua conta.</h2>
+
+          <p class="login-description">
+            Informe seus dados para continuar.
+          </p>
+
+          <form id="form" class="login-form">
+
+            <div class="field-group">
+              <label for="email">E-MAIL</label>
+
+              <input
+                type="email"
+                id="email"
+                placeholder="seuemail@exemplo.com"
+                autocomplete="email"
+                required
+              >
+            </div>
+
+            <div class="field-group">
+              <label for="senha">SENHA</label>
+
+              <input
+                type="password"
+                id="senha"
+                placeholder="Digite sua senha"
+                autocomplete="current-password"
+                required
+              >
+            </div>
+
+            <button class="btn login-submit" type="submit">
+              Entrar na minha conta
+              <span>→</span>
+            </button>
+
+          </form>
+
+          <p class="msg" id="msg"></p>
+
+          <div class="login-divider">
+            <span>AINDA NÃO TEM CONTA?</span>
+          </div>
+
+          <a href="cadastro.html" class="login-register">
+            Criar minha conta
+            <span>→</span>
+          </a>
+
+        </div>
+
+        <div class="login-bottom">
+          <span>© 2026 BARBERTIME</span>
+          <span>UMA EXPERIÊNCIA DIFERENTE.</span>
+        </div>
+
+      </div>
+
+    </section>
+
   </main>
 
   <script src="js/app.js"></script>
+
   <script>
     navbar();
+
     $('#form').onsubmit = async e => {
       e.preventDefault();
+
+      $('#msg').textContent = '';
+
+      const botao = $('#form').querySelector('button');
+      botao.disabled = true;
+      botao.textContent = 'Entrando...';
+
       try {
-        const user = await api('/login', { method: 'POST', body: { email: $('#email').value, senha: $('#senha').value } });
+        const user = await api('/login', {
+          method: 'POST',
+          body: {
+            email: $('#email').value,
+            senha: $('#senha').value
+          }
+        });
+
         entrar(user);
-        location.href = user.tipo === 'barbeiro' ? 'barbeiro.html' : 'agendar.html';
-      } catch (err) { $('#msg').textContent = err.message; }
+
+        location.href = user.tipo === 'barbeiro'
+          ? 'barbeiro.html'
+          : 'agendar.html';
+
+      } catch (err) {
+        $('#msg').textContent = err.message;
+        botao.disabled = false;
+        botao.innerHTML = 'Entrar na minha conta <span>→</span>';
+      }
     };
   </script>
+
 </body>
 </html>

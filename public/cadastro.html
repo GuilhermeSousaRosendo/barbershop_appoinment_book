@@ -1,44 +1,189 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cadastro | BarberTime</title>
+  <title>Criar conta | BarberTime</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body class="login-body">
+
   <header class="nav" id="nav"></header>
-  <main>
-    <div class="card">
-      <h2>Criar conta</h2>
-      <form id="form">
-        <input id="nome" placeholder="Nome completo" required>
-        <input type="email" id="email" placeholder="E-mail" required>
-        <input type="password" id="senha" placeholder="Senha" required>
-        <select id="tipo">
-          <option value="cliente">Sou cliente</option>
-          <option value="barbeiro">Sou barbeiro</option>
-        </select>
-        <button class="btn">Criar conta</button>
-      </form>
-      <p class="msg" id="msg"></p>
-      <p class="hint">Já tem conta? <a href="login.html"><b>Entrar</b></a></p>
-    </div>
+
+  <main class="login-page cadastro-page">
+
+    <section class="login-container cadastro-container">
+
+      <!-- LADO VISUAL -->
+      <div class="login-visual cadastro-visual">
+
+        <div class="login-brand">
+          <span class="brand-symbol">BT</span>
+          <span>BARBERTIME</span>
+        </div>
+
+        <div class="login-visual-content">
+
+          <span class="section-tag">FAÇA PARTE DA EXPERIÊNCIA</span>
+
+          <h1>
+            Seu estilo<br>
+            começa com<br>
+            <span>uma escolha.</span>
+          </h1>
+
+          <p>
+            Crie sua conta e tenha acesso a uma
+            experiência prática, exclusiva e
+            personalizada.
+          </p>
+
+        </div>
+
+        <div class="login-visual-footer">
+          ESTILO · PRECISÃO · PERSONALIDADE
+        </div>
+
+        <div class="login-decoration">BT</div>
+
+      </div>
+
+      <!-- FORMULÁRIO -->
+      <div class="login-form-area cadastro-form-area">
+
+        <div class="login-form-content">
+
+          <div class="login-mobile-brand">
+            <span>BT</span>
+            BARBERTIME
+          </div>
+
+          <span class="section-tag">NOVO POR AQUI?</span>
+
+          <h2>Crie sua conta.</h2>
+
+          <p class="login-description">
+            Preencha seus dados para começar.
+          </p>
+
+          <form id="form" class="login-form cadastro-form">
+
+            <div class="field-group">
+              <label for="nome">NOME COMPLETO</label>
+
+              <input
+                type="text"
+                id="nome"
+                placeholder="Digite seu nome completo"
+                autocomplete="name"
+                required
+              >
+            </div>
+
+            <div class="field-group">
+              <label for="email">E-MAIL</label>
+
+              <input
+                type="email"
+                id="email"
+                placeholder="seuemail@exemplo.com"
+                autocomplete="email"
+                required
+              >
+            </div>
+
+            <div class="field-group">
+              <label for="senha">SENHA</label>
+
+              <input
+                type="password"
+                id="senha"
+                placeholder="Crie uma senha"
+                autocomplete="new-password"
+                required
+              >
+            </div>
+
+            <div class="field-group">
+              <label for="tipo">TIPO DE CONTA</label>
+
+              <select id="tipo">
+                <option value="cliente">Sou cliente</option>
+                <option value="barbeiro">Sou barbeiro</option>
+              </select>
+            </div>
+
+            <button class="btn login-submit" type="submit">
+              Criar minha conta
+              <span>→</span>
+            </button>
+
+          </form>
+
+          <p class="msg" id="msg"></p>
+
+          <div class="login-divider">
+            <span>JÁ POSSUI UMA CONTA?</span>
+          </div>
+
+          <a href="login.html" class="login-register">
+            Entrar na minha conta
+            <span>→</span>
+          </a>
+
+        </div>
+
+        <div class="login-bottom">
+          <span>© 2026 BARBERTIME</span>
+          <span>SUA EXPERIÊNCIA COMEÇA AQUI.</span>
+        </div>
+
+      </div>
+
+    </section>
+
   </main>
 
   <script src="js/app.js"></script>
+
   <script>
     navbar();
+
     $('#form').onsubmit = async e => {
       e.preventDefault();
+
+      $('#msg').textContent = '';
+
+      const botao = $('#form').querySelector('button');
+      botao.disabled = true;
+      botao.textContent = 'Criando conta...';
+
       try {
-        const user = await api('/cadastro', { method: 'POST', body: {
-          nome: $('#nome').value, email: $('#email').value, senha: $('#senha').value, tipo: $('#tipo').value
-        }});
+        const user = await api('/cadastro', {
+          method: 'POST',
+          body: {
+            nome: $('#nome').value,
+            email: $('#email').value,
+            senha: $('#senha').value,
+            tipo: $('#tipo').value
+          }
+        });
+
         entrar(user);
-        location.href = user.tipo === 'barbeiro' ? 'horarios.html' : 'agendar.html';
-      } catch (err) { $('#msg').textContent = err.message; }
+
+        location.href = user.tipo === 'barbeiro'
+          ? 'horarios.html'
+          : 'agendar.html';
+
+      } catch (err) {
+        $('#msg').textContent = err.message;
+
+        botao.disabled = false;
+        botao.innerHTML = 'Criar minha conta <span>→</span>';
+      }
     };
   </script>
+
 </body>
 </html>
