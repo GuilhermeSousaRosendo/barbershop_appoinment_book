@@ -1,0 +1,165 @@
+* {
+    box-sizing: border-box;
+    font-family: system-ui, sans-serif;
+}
+
+body {
+    margin: 0;
+    background: #1b1b1f;
+    color: #eee;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 32px;
+    background: #111;
+    border-bottom: 3px solid #c8963e;
+}
+
+.topbar h1 {
+    margin: 0;
+    font-size: 1.4rem;
+    color: #c8963e;
+}
+
+main {
+    max-width: 520px;
+    margin: 32px auto;
+    padding: 0 16px;
+}
+
+.card {
+    background: #26262c;
+    padding: 24px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+h2 {
+    margin-top: 0;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+input,
+select {
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    background: #1b1b1f;
+    color: #eee;
+    font-size: 1rem;
+}
+
+.btn {
+    padding: 12px;
+    border: 0;
+    border-radius: 8px;
+    background: #c8963e;
+    color: #111;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.btn:hover {
+    background: #e0aa4f;
+}
+
+.btn.small {
+    padding: 6px 12px;
+    font-size: .85rem;
+}
+
+.btn.danger {
+    background: #c0392b;
+    color: #fff;
+}
+
+.btn.ok {
+    background: #27ae60;
+    color: #fff;
+}
+
+.tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.tabs button {
+    flex: 1;
+    padding: 10px;
+    border: 0;
+    background: #1b1b1f;
+    color: #aaa;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.tabs button.active {
+    background: #c8963e;
+    color: #111;
+    font-weight: bold;
+}
+
+.hint {
+    color: #888;
+    font-size: .85rem;
+}
+
+#msg,
+#msgAg {
+    min-height: 20px;
+    color: #e0aa4f;
+}
+
+.lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.lista li {
+    background: #1b1b1f;
+    padding: 14px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: .75rem;
+    font-weight: bold;
+}
+
+.badge.pendente {
+    background: #e0aa4f;
+    color: #111;
+}
+
+.badge.confirmado {
+    background: #27ae60;
+}
+
+.badge.cancelado {
+    background: #c0392b;
+}
+
+.acoes {
+    display: flex;
+    gap: 6px;
+}
