@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meus horários | BarberTime</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="nav" id="nav"></header>
+  <main>
+    <div class="card">
+      <h2>Dias de atendimento</h2>
+      <div class="checks" id="dias"></div>
+    </div>
+    <div class="card">
+      <h2>Horários de atendimento</h2>
+      <div class="checks" id="slots"></div>
+      <br>
+      <button class="btn" id="btnSalvar">Salvar</button>
+      <p class="msg" id="msg"></p>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    const user = proteger('barbeiro');
+    navbar();
+
+    const NOMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const TODOS = Array.from({ length: 12 }, (_, i) => String(i + 8).padStart(2, '0') + ':00'); // 08:00 a 19:00
+
+    const check = (grupo, valor, texto, marcado) =>
+      `<label><input type="checkbox" data-grupo="${grupo}" value="${valor}" ${marcado ? 'checked' : ''}> ${texto}</label>`;
+
+    async function carregar() {
+      const h = await api('/horarios/' + user.id);
+      $('#dias').innerHTML = NOMES.map((n, i) => check('dia', i, n, h.dias.includes(i))).join('');
+      $('#slots').innerHTML = TODOS.map(t => check('slot', t, t, h.slots.includes(t))).join('');
+    }
+
+    const marcados = g => [...document.querySelectorAll(`input[data-grupo="${g}"]:checked`)].map(i => i.value);
+
+    $('#btnSalvar').onclick = async () => {
+      await api('/horarios/' + user.id, { method: 'PUT', body: {
+        dias: marcados('dia').map(Number), slots: marcados('slot')
+      }});
+      $('#msg').textContent = 'Horários salvos! ✅';
+    };
+    carregar();
+  </script>
+</body>
+</html>
