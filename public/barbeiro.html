@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agenda | BarberTime</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="nav" id="nav"></header>
+  <main>
+    <div class="card">
+      <h2>Minha agenda</h2>
+      <p class="sub" id="resumo"></p>
+      <label>Dia</label>
+      <input type="date" id="data">
+    </div>
+
+    <div class="card">
+      <h2 id="titulo">Horários do dia</h2>
+      <ul class="lista" id="lista"></ul>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    const user = proteger('barbeiro');
+    navbar();
+    $('#data').value = hoje();
+
+    async function carregar() {
+      const data = $('#data').value;
+      $('#titulo').textContent = 'Horários de ' + fmtData(data);
+
+      const todos = await api('/agendamentos?barbeiroId=' + user.id);
+      const pend = todos.filter(a => a.status === 'pendente').length;
+      $('#resumo').textContent = `${pend} agendamento(s) aguardando confirmação no total.`;
+
+      const slots = await api(`/agenda?barbeiroId=${user.id}&data=${data}`);
+      $('#lista').innerHTML = slots.length ? slots.map(s => {
+        const a = s.agendamento;
+        if (!a) return `<li class="livre"><span class="hora">${s.hora}</span><span>Livre</span></li>`;
+        return `<li>
+          <span class="hora">${s.hora}</span>
+          <div style="flex:1"><b>${a.clienteNome}</b> · ${a.servico} (R$ ${a.preco})<br>
+            <span class="badge ${a.status}">${a.status}</span></div>
+          <div class="acoes">
+            ${a.status === 'pendente' ? `<button class="btn small ok" onclick="mudar(${a.id},'confirmado')">Confirmar</button>` : ''}
+            <button class="btn small danger" onclick="mudar(${a.id},'cancelado')">Cancelar</button>
+          </div>
+        </li>`;
+      }).join('') : '<li>Você não atende neste dia. Ajuste em "Meus horários".</li>';
+    }
+
+    async function mudar(id, status) {
+      await api('/agendamentos/' + id, { method: 'PATCH', body: { status } });
+      carregar();
+    }
+
+    $('#data').onchange = carregar;
+    carregar();
+  </script>
+</body>
+</html>
