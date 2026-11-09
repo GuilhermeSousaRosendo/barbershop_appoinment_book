@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meus agendamentos | BarberTime</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="nav" id="nav"></header>
+  <main>
+    <div class="card">
+      <h2>Meus agendamentos</h2>
+      <ul class="lista" id="lista"></ul>
+      <br>
+      <a class="btn ghost" href="agendar.html">+ Novo agendamento</a>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    const user = proteger('cliente');
+    navbar();
+
+    async function carregar() {
+      const lista = await api('/agendamentos?clienteId=' + user.id);
+      $('#lista').innerHTML = lista.length ? lista.reverse().map(a => `
+        <li>
+          <div>
+            <b>${a.servico}</b> · R$ ${a.preco}<br>
+            ${a.barbeiroNome} · ${fmtData(a.data)} às ${a.hora}<br>
+            <span class="badge ${a.status}">${a.status}</span>
+          </div>
+          ${a.status !== 'cancelado'
+            ? `<button class="btn small danger" onclick="cancelar(${a.id})">Cancelar</button>` : ''}
+        </li>`).join('') : '<li>Você ainda não tem agendamentos.</li>';
+    }
+
+    async function cancelar(id) {
+      await api('/agendamentos/' + id, { method: 'PATCH', body: { status: 'cancelado' } });
+      carregar();
+    }
+    carregar();
+  </script>
+</body>
+</html>
