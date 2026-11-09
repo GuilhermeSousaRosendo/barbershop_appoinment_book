@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar | BarberTime</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="nav" id="nav"></header>
+  <main>
+    <div class="card">
+      <h2>Entrar</h2>
+      <form id="form">
+        <input type="email" id="email" placeholder="E-mail" required>
+        <input type="password" id="senha" placeholder="Senha" required>
+        <button class="btn">Entrar</button>
+      </form>
+      <p class="msg" id="msg"></p>
+      <p class="hint">Não tem conta? <a href="cadastro.html"><b>Cadastre-se</b></a></p>
+      <p class="hint">Demo: cliente <b>maria@email.com</b> / barbeiro <b>joao@barber.com</b> (senha <b>123</b>)</p>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    navbar();
+    $('#form').onsubmit = async e => {
+      e.preventDefault();
+      try {
+        const user = await api('/login', { method: 'POST', body: { email: $('#email').value, senha: $('#senha').value } });
+        entrar(user);
+        location.href = user.tipo === 'barbeiro' ? 'barbeiro.html' : 'agendar.html';
+      } catch (err) { $('#msg').textContent = err.message; }
+    };
+  </script>
+</body>
+</html>
