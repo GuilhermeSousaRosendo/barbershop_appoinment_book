@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Meus agendamentos | BarberTime</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
   <header class="nav" id="nav"></header>
   <main>
@@ -22,6 +24,8 @@
     const user = proteger('cliente');
     navbar();
 
+    const PG = { pago: 'Pago', pendente: 'Pagamento pendente', estornado: 'Estornado' };
+
     async function carregar() {
       const lista = await api('/agendamentos?clienteId=' + user.id);
       $('#lista').innerHTML = lista.length ? lista.reverse().map(a => `
@@ -30,17 +34,26 @@
             <b>${a.servico}</b> · R$ ${a.preco}<br>
             ${a.barbeiroNome} · ${fmtData(a.data)} às ${a.hora}<br>
             <span class="badge ${a.status}">${a.status}</span>
+            <span class="badge pg-${a.pagamento.status}">${PG[a.pagamento.status]}</span>
+            ${a.status === 'cancelado' ? `<br><span class="hint">Desmarcado pelo ${a.canceladoPor || 'cliente'}</span>` : ''}
           </div>
-          ${a.status !== 'cancelado'
-            ? `<button class="btn small danger" onclick="cancelar(${a.id})">Cancelar</button>` : ''}
+          <div class="acoes">
+            ${a.status !== 'cancelado' && a.pagamento.status !== 'pago'
+          ? `<a class="btn small ok" href="pagamento.html?id=${a.id}">Pagar com Pix</a>` : ''}
+            ${a.status !== 'cancelado'
+          ? `<button class="btn small danger" onclick="desmarcar(${a.id}, ${a.pagamento.status === 'pago'})">Desmarcar</button>` : ''}
+          </div>
         </li>`).join('') : '<li>Você ainda não tem agendamentos.</li>';
     }
 
-    async function cancelar(id) {
-      await api('/agendamentos/' + id, { method: 'PATCH', body: { status: 'cancelado' } });
+    async function desmarcar(id, pago) {
+      const aviso = pago ? 'Desmarcar este horário? O pagamento será estornado.' : 'Desmarcar este horário?';
+      if (!confirm(aviso)) return;
+      await api('/agendamentos/' + id, { method: 'PATCH', body: { status: 'cancelado', por: 'cliente' } });
       carregar();
     }
     carregar();
   </script>
 </body>
+
 </html>
