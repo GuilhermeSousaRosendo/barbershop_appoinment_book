@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/GuilhermeSousaRosendo/barbershop_appoinment_book#readme",
   "dependencies": {
-    "express": "^5.3.0"
+    "express": "^5.3.0",
+    "qrcode": "^1.5.4"
   }
 }
