@@ -1,12 +1,13 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Agendar | BarberTime</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
 
   <header class="nav" id="nav"></header>
@@ -185,27 +186,19 @@
 
     $('#btnConfirmar').onclick = async () => {
       try {
-        await api('/agendamentos', {
-          method: 'POST',
-          body: {
-            clienteId: user.id,
-            barbeiroId: $('#barbeiro').value,
-            servicoId: $('#servico').value,
-            data: $('#data').value,
-            hora: horaEscolhida
+        const novo = await api('/agendamentos', {
+          method: 'POST', body: {
+            clienteId: user.id, barbeiroId: $('#barbeiro').value,
+            servicoId: $('#servico').value, data: $('#data').value, hora: horaEscolhida
           }
         });
-
-        location.href = 'meus-agendamentos.html';
-
-      } catch (err) {
-        $('#msg').textContent = err.message;
-        carregarSlots();
-      }
+        location.href = 'pagamento.html?id=' + novo.id;
+      } catch (err) { $('#msg').textContent = err.message; carregarSlots(); }
     };
 
     iniciar();
   </script>
 
 </body>
+
 </html>
