@@ -2,6 +2,11 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 
+const crypto = require('crypto');
+const QRCode = require('qrcode');
+
+const TEMPO_PIX = 35; // segundos que o QR Code fica na tela
+
 const app = express();
 const DB_FILE = path.join(__dirname, 'db.json');
 
@@ -83,11 +88,12 @@ function montarSlots(db, barbeiroId, data) {
 }
 
 const enriquecer = (db, a) => ({
-    ...a,
-    clienteNome: db.usuarios.find(u => u.id === a.clienteId)?.nome,
-    barbeiroNome: db.usuarios.find(u => u.id === a.barbeiroId)?.nome,
-    servico: db.servicos.find(s => s.id === a.servicoId)?.nome,
-    preco: db.servicos.find(s => s.id === a.servicoId)?.preco
+  ...a,
+  clienteNome: db.usuarios.find(u => u.id === a.clienteId)?.nome,
+  barbeiroNome: db.usuarios.find(u => u.id === a.barbeiroId)?.nome,
+  servico: db.servicos.find(s => s.id === a.servicoId)?.nome,
+  preco: db.servicos.find(s => s.id === a.servicoId)?.preco,
+  pagamento: a.pagamento || { metodo: 'pix', status: 'pendente' }
 });
 
 // ---- Disponibilidade (cliente vê só livre/ocupado) ----
@@ -116,11 +122,12 @@ app.post('/api/agendamentos', (req, res) => {
     const slot = montarSlots(db, Number(barbeiroId), data).find(s => s.hora === hora);
     if (!slot || !slot.livre) return res.status(409).json({ erro: 'Horário indisponível.' });
 
-    const novo = {
-        id: proximoId(db.agendamentos),
-        clienteId: Number(clienteId), barbeiroId: Number(barbeiroId), servicoId: Number(servicoId),
-        data, hora, status: 'pendente'
-    };
+      const novo = {
+    id: proximoId(db.agendamentos),
+    clienteId: Number(clienteId), barbeiroId: Number(barbeiroId), servicoId: Number(servicoId),
+    data, hora, status: 'pendente',
+    pagamento: { metodo: 'pix', status: 'pendente' }
+  };
     db.agendamentos.push(novo);
     salvarDB(db);
     res.status(201).json(enriquecer(db, novo));
