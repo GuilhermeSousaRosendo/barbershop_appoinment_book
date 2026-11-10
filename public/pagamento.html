@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pagamento | BarberTime</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="nav" id="nav"></header>
+  <main>
+    <div class="card" id="boxPix" hidden>
+      <h2>Pagamento via Pix</h2>
+      <div class="resumo-pg" id="resumo"></div>
+      <div class="pix">
+        <div class="qr"><img id="qr" alt="QR Code Pix"></div>
+        <div class="valor" id="valor"></div>
+        <div class="barra"><div id="barra"></div></div>
+        <p class="hint" id="tempo">Aguardando pagamento...</p>
+        <textarea class="copia" id="codigo" readonly></textarea>
+        <br><br>
+        <button class="btn ghost small" id="btnCopiar">Copiar código Pix</button>
+      </div>
+      <p class="msg" id="msg"></p>
+      <p class="hint"><a href="meus-agendamentos.html">Pagar depois</a></p>
+    </div>
+
+    <div class="card aprovado" id="boxOk" hidden>
+      <div class="check">✅</div>
+      <h2>Pagamento aprovado!</h2>
+      <p class="sub">Seu horário está reservado. O barbeiro já vê o pagamento.</p>
+      <a class="btn" href="meus-agendamentos.html">Ver meus agendamentos</a>
+    </div>
+
+    <p class="msg" id="erro"></p>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    const user = proteger('cliente');
+    navbar();
+    const id = new URLSearchParams(location.search).get('id');
+    let intervalo;
+
+    async function iniciar() {
+      try {
+        const lista = await api('/agendamentos?clienteId=' + user.id);
+        const ag = lista.find(a => a.id === Number(id));
+        if (!ag) throw new Error('Agendamento não encontrado.');
+        $('#resumo').innerHTML = `<b>${ag.servico}</b> com ${ag.barbeiroNome}<br>${fmtData(ag.data)} às ${ag.hora}`;
+
+        const p = await api(`/agendamentos/${id}/pix`, { method: 'POST' });
+        if (p.pago) return aprovado();
+        mostrar(p);
+      } catch (e) { $('#erro').textContent = e.message; }
+    }
+
+    function mostrar(p) {
+      $('#boxPix').hidden = false;
+      $('#qr').src = p.qr;
+      $('#codigo').value = p.codigo;
+      $('#valor').textContent = 'R$ ' + p.valor.toFixed(2).replace('.', ',');
+
+      const fim = Date.now() + p.restante * 1000;
+      intervalo = setInterval(async () => {
+        const falta = Math.max(0, (fim - Date.now()) / 1000);
+        $('#barra').style.width = (falta / p.total * 100) + '%';
+        $('#tempo').textContent = `Escaneie o QR Code · validando em ${Math.ceil(falta)}s`;
+        if (falta <= 0) { clearInterval(intervalo); confirmar(); }
+      }, 250);
+    }
+
+    async function confirmar() {
+      $('#tempo').textContent = 'Confirmando pagamento...';
+      try { await api(`/agendamentos/${id}/pagar`, { method: 'POST' }); aprovado(); }
+      catch (e) { $('#msg').textContent = e.message; setTimeout(() => location.reload(), 2000); }
+    }
+
+    function aprovado() { $('#boxPix').hidden = true; $('#boxOk').hidden = false; }
+
+    $('#btnCopiar').onclick = () => {
+      $('#codigo').select(); document.execCommand('copy');
+      $('#btnCopiar').textContent = 'Copiado! ✅';
+    };
+
+    iniciar();
+  </script>
+</body>
+</html>

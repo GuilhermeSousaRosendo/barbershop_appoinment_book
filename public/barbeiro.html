@@ -117,119 +117,50 @@
   <script>
     const user = proteger('barbeiro');
     navbar();
-
     $('#data').value = hoje();
 
+    const PG = { pago: '💰 Pago', pendente: 'Pagamento pendente', estornado: 'Estornado' };
+
     async function carregar() {
-      try {
-        const data = $('#data').value;
+      const data = $('#data').value;
+      $('#titulo').textContent = 'Horários de ' + fmtData(data);
 
-        if (!data) return;
+      const todos = await api('/agendamentos?barbeiroId=' + user.id);
+      const pend = todos.filter(a => a.status === 'pendente').length;
+      const recebido = todos.filter(a => a.status !== 'cancelado' && a.pagamento.status === 'pago')
+                            .reduce((t, a) => t + a.preco, 0);
+      $('#resumo').textContent = `${pend} aguardando confirmação · R$ ${recebido} recebidos via Pix`;
 
-        $('#titulo').textContent = 'Horários de ' + fmtData(data);
-
-        const todos = await api('/agendamentos?barbeiroId=' + user.id);
-
-        const pend = todos.filter(a => a.status === 'pendente').length;
-        const confirmados = todos.filter(a => a.status === 'confirmado').length;
-
-        $('#statPendentes').textContent = pend;
-        $('#statConfirmados').textContent = confirmados;
-
-        $('#resumo').textContent =
-          `${pend} agendamento(s) aguardando confirmação no total.`;
-
-        const slots = await api(
-          `/agenda?barbeiroId=${user.id}&data=${data}`
-        );
-
-        $('#statTotal').textContent = slots.length;
-
-        $('#lista').innerHTML = slots.length
-          ? slots.map(s => {
-              const a = s.agendamento;
-
-              if (!a) {
-                return `
-                  <li class="agenda-slot livre">
-                    <span class="hora">${s.hora}</span>
-
-                    <div class="agenda-content">
-                      <b>Horário disponível</b>
-                      <span>Este horário ainda não foi reservado.</span>
-                    </div>
-
-                    <span class="agenda-status status-livre">
-                      Livre
-                    </span>
-                  </li>
-                `;
-              }
-
-              return `
-                <li class="agenda-slot">
-                  <span class="hora">${s.hora}</span>
-
-                  <div class="agenda-content">
-                    <b>${a.clienteNome}</b>
-                    <span>${a.servico} · R$ ${a.preco}</span>
-
-                    <span class="badge ${a.status}">
-                      ${a.status}
-                    </span>
-                  </div>
-
-                  <div class="acoes">
-                    ${
-                      a.status === 'pendente'
-                        ? `<button class="btn small ok"
-                            onclick="mudar(${a.id}, 'confirmado')">
-                            Confirmar
-                          </button>`
-                        : ''
-                    }
-
-                    ${
-                      a.status !== 'cancelado'
-                        ? `<button class="btn small danger"
-                            onclick="mudar(${a.id}, 'cancelado')">
-                            Cancelar
-                          </button>`
-                        : ''
-                    }
-                  </div>
-                </li>
-              `;
-            }).join('')
-          : `
-            <li class="agenda-empty">
-              <span>◷</span>
-              <b>Nenhum horário encontrado</b>
-              <p>Você não atende neste dia. Ajuste sua disponibilidade em "Meus horários".</p>
-            </li>
-          `;
-
-      } catch (err) {
-        $('#resumo').textContent = err.message;
-      }
+      const slots = await api(`/agenda?barbeiroId=${user.id}&data=${data}`);
+      $('#lista').innerHTML = slots.length ? slots.map(s => {
+        const a = s.agendamento;
+        if (!a) return `<li class="livre"><span class="hora">${s.hora}</span><span>Livre</span></li>`;
+        return `<li>
+          <span class="hora">${s.hora}</span>
+          <div style="flex:1"><b>${a.clienteNome}</b> · ${a.servico} (R$ ${a.preco})<br>
+            <span class="badge ${a.status}">${a.status}</span>
+            <span class="badge pg-${a.pagamento.status}">${PG[a.pagamento.status]}</span></div>
+          <div class="acoes">
+            ${a.status === 'pendente' ? `<button class="btn small ok" onclick="mudar(${a.id},'confirmado')">Confirmar</button>` : ''}
+            <button class="btn small danger" onclick="desmarcar(${a.id}, '${a.clienteNome}', ${a.pagamento.status === 'pago'})">Desmarcar</button>
+          </div>
+        </li>`;
+      }).join('') : '<li>Você não atende neste dia. Ajuste em "Meus horários".</li>';
     }
 
     async function mudar(id, status) {
-      try {
-        await api('/agendamentos/' + id, {
-          method: 'PATCH',
-          body: { status }
-        });
+      await api('/agendamentos/' + id, { method: 'PATCH', body: { status } });
+      carregar();
+    }
 
-        carregar();
-
-      } catch (err) {
-        alert(err.message);
-      }
+    async function desmarcar(id, cliente, pago) {
+      const aviso = `Desmarcar o horário de ${cliente}?` + (pago ? ' O pagamento será estornado.' : '');
+      if (!confirm(aviso)) return;
+      await api('/agendamentos/' + id, { method: 'PATCH', body: { status: 'cancelado', por: 'barbeiro' } });
+      carregar();
     }
 
     $('#data').onchange = carregar;
-
     carregar();
   </script>
 
