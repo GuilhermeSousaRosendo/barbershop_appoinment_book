@@ -88,12 +88,12 @@ function montarSlots(db, barbeiroId, data) {
 }
 
 const enriquecer = (db, a) => ({
-  ...a,
-  clienteNome: db.usuarios.find(u => u.id === a.clienteId)?.nome,
-  barbeiroNome: db.usuarios.find(u => u.id === a.barbeiroId)?.nome,
-  servico: db.servicos.find(s => s.id === a.servicoId)?.nome,
-  preco: db.servicos.find(s => s.id === a.servicoId)?.preco,
-  pagamento: a.pagamento || { metodo: 'pix', status: 'pendente' }
+    ...a,
+    clienteNome: db.usuarios.find(u => u.id === a.clienteId)?.nome,
+    barbeiroNome: db.usuarios.find(u => u.id === a.barbeiroId)?.nome,
+    servico: db.servicos.find(s => s.id === a.servicoId)?.nome,
+    preco: db.servicos.find(s => s.id === a.servicoId)?.preco,
+    pagamento: a.pagamento || { metodo: 'pix', status: 'pendente' }
 });
 
 // ---- Disponibilidade (cliente vê só livre/ocupado) ----
@@ -122,12 +122,12 @@ app.post('/api/agendamentos', (req, res) => {
     const slot = montarSlots(db, Number(barbeiroId), data).find(s => s.hora === hora);
     if (!slot || !slot.livre) return res.status(409).json({ erro: 'Horário indisponível.' });
 
-      const novo = {
-    id: proximoId(db.agendamentos),
-    clienteId: Number(clienteId), barbeiroId: Number(barbeiroId), servicoId: Number(servicoId),
-    data, hora, status: 'pendente',
-    pagamento: { metodo: 'pix', status: 'pendente' }
-  };
+    const novo = {
+        id: proximoId(db.agendamentos),
+        clienteId: Number(clienteId), barbeiroId: Number(barbeiroId), servicoId: Number(servicoId),
+        data, hora, status: 'pendente',
+        pagamento: { metodo: 'pix', status: 'pendente' }
+    };
     db.agendamentos.push(novo);
     salvarDB(db);
     res.status(201).json(enriquecer(db, novo));
@@ -171,6 +171,59 @@ app.put('/api/horarios/:barbeiroId', (req, res) => {
     res.json(db.horarios[req.params.barbeiroId]);
 });
 
+// ---- Pix simulado ----
+// Código "copia e cola" fictício (o CRC é falso, serve só para a demonstração)
+function gerarCodigoPix(valor) {
+    const txid = crypto.randomBytes(8).toString('hex').toUpperCase();
+    const v = valor.toFixed(2);
+    return '00020126370014BR.GOV.BCB.PIX0115barbertime-demo' +
+        '52040000530398654' + String(v.length).padStart(2, '0') + v +
+        '5802BR5910BARBERTIME6009SAO PAULO' +
+        '62200516' + txid + '6304ABCD';
+}
+
+// Gera (ou recupera) o QR Code do agendamento
+app.post('/api/agendamentos/:id/pix', async (req, res) => {
+    const db = lerDB();
+    const ag = db.agendamentos.find(a => a.id === Number(req.params.id));
+    if (!ag) return res.status(404).json({ erro: 'Agendamento não encontrado.' });
+    if (ag.status === 'cancelado') return res.status(409).json({ erro: 'Agendamento cancelado.' });
+
+    ag.pagamento = ag.pagamento || { metodo: 'pix', status: 'pendente' };
+    if (ag.pagamento.status === 'pago') return res.json({ pago: true });
+
+    const valor = db.servicos.find(s => s.id === ag.servicoId).preco;
+    const idade = ag.pagamento.pixGeradoEm ? (Date.now() - ag.pagamento.pixGeradoEm) / 1000 : Infinity;
+
+    // gera um QR novo se não existe ou se o anterior já passou do tempo (cliente abandonou a tela)
+    if (idade > TEMPO_PIX + 10) {
+        ag.pagamento.status = 'pendente';
+        ag.pagamento.codigo = gerarCodigoPix(valor);
+        ag.pagamento.pixGeradoEm = Date.now();
+        salvarDB(db);
+    }
+
+    const restante = Math.max(0, TEMPO_PIX - (Date.now() - ag.pagamento.pixGeradoEm) / 1000);
+    const qr = await QRCode.toDataURL(ag.pagamento.codigo, { width: 260, margin: 2 });
+    res.json({ pago: false, codigo: ag.pagamento.codigo, qr, valor, restante, total: TEMPO_PIX });
+});
+
+// Aprova o pagamento (só depois dos 35 s)
+app.post('/api/agendamentos/:id/pagar', (req, res) => {
+    const db = lerDB();
+    const ag = db.agendamentos.find(a => a.id === Number(req.params.id));
+    if (!ag || !ag.pagamento?.pixGeradoEm) return res.status(404).json({ erro: 'Pix não encontrado.' });
+    if (ag.pagamento.status === 'pago') return res.json(enriquecer(db, ag));
+    if (ag.status === 'cancelado') return res.status(409).json({ erro: 'Agendamento cancelado.' });
+
+    const restante = TEMPO_PIX - (Date.now() - ag.pagamento.pixGeradoEm) / 1000;
+    if (restante > 1) return res.status(409).json({ erro: 'Pagamento ainda em processamento.', restante: Math.ceil(restante) });
+
+    ag.pagamento.status = 'pago';
+    ag.pagamento.pagoEm = new Date().toISOString();
+    salvarDB(db);
+    res.json(enriquecer(db, ag));
+});
 
 const PORT = 3000;
 app.listen(PORT, () => console.log(`BarberTime rodando em http://localhost:${PORT}`));
