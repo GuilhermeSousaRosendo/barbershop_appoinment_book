@@ -144,19 +144,25 @@ app.get('/api/agendamentos', (req, res) => {
     res.json(lista.map(a => enriquecer(db, a)));
 });
 
-// ---- Confirmar / cancelar ----
+// ---- Confirmar / desmarcar ----
 app.patch('/api/agendamentos/:id', (req, res) => {
-    const { status } = req.body;
+    const { status, por } = req.body;
     if (!['confirmado', 'cancelado'].includes(status))
         return res.status(400).json({ erro: 'Status inválido.' });
     const db = lerDB();
     const ag = db.agendamentos.find(a => a.id === Number(req.params.id));
     if (!ag) return res.status(404).json({ erro: 'Agendamento não encontrado.' });
+    if (ag.status === 'cancelado') return res.status(409).json({ erro: 'Agendamento já foi desmarcado.' });
+
     ag.status = status;
+    if (status === 'cancelado') {
+        ag.canceladoPor = por === 'barbeiro' ? 'barbeiro' : 'cliente';
+        ag.canceladoEm = new Date().toISOString();
+        if (ag.pagamento?.status === 'pago') ag.pagamento.status = 'estornado'; // estorno simulado
+    }
     salvarDB(db);
     res.json(enriquecer(db, ag));
 });
-
 // ---- Horários de atendimento do barbeiro ----
 app.get('/api/horarios/:barbeiroId', (req, res) =>
     res.json(lerDB().horarios[req.params.barbeiroId] || { dias: [], slots: [] }));
